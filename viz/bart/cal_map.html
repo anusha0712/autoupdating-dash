@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>BART Crime Calendar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Barlow', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            background: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px 25px;
+            margin-bottom: 30px;
+        }
+
+        .month-wrapper {
+            min-width: 0;
+        }
+
+        .month-header {
+            font-size: 14px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+
+        .day-labels {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-bottom: 3px;
+        }
+
+        .day-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #999;
+            text-align: center;
+            padding: 3px 0;
+        }
+
+        .weeks {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .week {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+
+        .day-cell {
+            aspect-ratio: 1;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.12s;
+            border: 1px solid transparent;
+            position: relative;
+        }
+
+        .day-cell.empty {
+            background: transparent;
+            cursor: default;
+        }
+
+        .day-cell.no-data {
+            background: #f8f8f8;
+            color: #bbb;
+            border: 1px solid #f0f0f0;
+        }
+
+        .day-cell.has-data {
+            color: #333;
+        }
+
+        .day-cell.has-data:hover {
+            transform: scale(1.15);
+            border-color: #333;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .legend {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .legend-label {
+            font-size: 11px;
+            color: #666;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .legend-scale {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+
+        .legend-text {
+            font-size: 10px;
+            color: #888;
+            margin-left: 3px;
+            margin-right: 8px;
+        }
+
+        /* Tooltip Styles */
+        .tooltip {
+            position: absolute;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 14px 16px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 1000;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+            max-width: 280px;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        .tooltip-date {
+            font-size: 13px;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: 8px;
+        }
+
+        .tooltip-count {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            color: #222;
+        }
+
+        .tooltip-crimes {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 10px;
+        }
+
+        .tooltip-crimes li {
+            font-size: 12px;
+            color: #555;
+            padding: 3px 0;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 900px) {
+            .calendar-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 25px 20px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .calendar-grid {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div id="calendarGrid" class="calendar-grid"></div>
+    </div>
+
+    <div id="tooltip" class="tooltip"></div>
+
+    <script>
+        d3.json('calendar_data.json').then(function (data) {
+            const dataMap = new Map(data.map(d => [d.date, d]));
+
+            // Get all unique months from the data
+            const monthsSet = new Set();
+            data.forEach(d => {
+                const date = new Date(d.date);
+                const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+                monthsSet.add(monthKey);
+            });
+
+            const allMonths = Array.from(monthsSet)
+                .map(key => {
+                    const [year, month] = key.split('-');
+                    return new Date(parseInt(year), parseInt(month), 1);
+                })
+                .sort((a, b) => a - b);
+
+            // Get last 6 months
+            const last6Months = allMonths.slice(-6);
+
+            const colorScale = d3.scaleThreshold()
+                .domain([1, 2, 3, 4, 5, 6, 7])
+                .range(['#f8f8f8', '#fff6cc', '#efbe25', '#f29e38', '#e8743b', '#d9534f', '#c44341', '#a63333']);
+
+            const monthNames = ["January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"];
+
+            function createMonthCalendar(monthDate) {
+                const year = monthDate.getFullYear();
+                const month = monthDate.getMonth();
+
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const daysInMonth = lastDay.getDate();
+                const startingDayOfWeek = firstDay.getDay();
+
+                const totalCells = startingDayOfWeek + daysInMonth;
+                const weeksNeeded = Math.ceil(totalCells / 7);
+
+                let html = '<div class="month-wrapper">';
+                html += `<div class="month-header">${monthNames[month]} ${year}</div>`;
+
+                html += `
+                    <div class="day-labels">
+                        <div class="day-label">S</div>
+                        <div class="day-label">M</div>
+                        <div class="day-label">T</div>
+                        <div class="day-label">W</div>
+                        <div class="day-label">T</div>
+                        <div class="day-label">F</div>
+                        <div class="day-label">S</div>
+                    </div>
+                    <div class="weeks">
+                `;
+
+                let dayCounter = 1;
+
+                for (let week = 0; week < weeksNeeded; week++) {
+                    html += '<div class="week">';
+
+                    for (let day = 0; day < 7; day++) {
+                        const cellIndex = week * 7 + day;
+
+                        if (cellIndex < startingDayOfWeek || dayCounter > daysInMonth) {
+                            html += '<div class="day-cell empty"></div>';
+                        } else {
+                            const currentDate = new Date(year, month, dayCounter);
+                            const dateStr = d3.timeFormat("%Y-%m-%d")(currentDate);
+                            const crimeDay = dataMap.get(dateStr);
+
+                            if (crimeDay && crimeDay.count > 0) {
+                                const color = colorScale(crimeDay.count);
+                                html += `<div class="day-cell has-data" style="background: ${color}" data-date="${dateStr}">${dayCounter}</div>`;
+                            } else {
+                                html += `<div class="day-cell no-data">${dayCounter}</div>`;
+                            }
+
+                            dayCounter++;
+                        }
+                    }
+
+                    html += '</div>';
+                }
+
+                html += '</div></div>';
+                return html;
+            }
+
+            function render() {
+                const grid = document.getElementById('calendarGrid');
+                let html = '';
+
+                last6Months.forEach(monthDate => {
+                    html += createMonthCalendar(monthDate);
+                });
+
+                grid.innerHTML = html;
+                attachTooltips();
+            }
+
+            function attachTooltips() {
+                document.querySelectorAll('.day-cell.has-data').forEach(cell => {
+                    cell.addEventListener('mouseenter', (e) => {
+                        const dateStr = e.target.dataset.date;
+                        const crimeDay = dataMap.get(dateStr);
+                        if (crimeDay) {
+                            showTooltip(e, new Date(dateStr), crimeDay);
+                        }
+                    });
+                    cell.addEventListener('mouseleave', hideTooltip);
+                });
+            }
+
+            function showTooltip(event, date, crimeDay) {
+                const tooltip = document.getElementById('tooltip');
+                const formattedDate = d3.timeFormat("%B %d, %Y")(date);
+
+                // Get the color from the cell to use for background
+                const cellColor = colorScale(crimeDay.count);
+
+                let html = `
+                    <div class="tooltip-date">${formattedDate}</div>
+                    <div class="tooltip-count" style="background-color: ${cellColor}">${crimeDay.count} incident${crimeDay.count !== 1 ? 's' : ''}</div>
+                `;
+
+                if (crimeDay.types && crimeDay.types.length > 0) {
+                    html += '<ul class="tooltip-crimes">';
+                    crimeDay.types.forEach(type => {
+                        html += `<li><span style="color: ${cellColor}">•</span> ${type}</li>`;
+                    });
+                    html += '</ul>';
+                }
+
+                tooltip.innerHTML = html;
+
+                // Position tooltip
+                const tooltipRect = tooltip.getBoundingClientRect();
+                const cellRect = event.target.getBoundingClientRect();
+
+                let left = event.pageX + 15;
+                let top = event.pageY - 15;
+
+                // Adjust if tooltip goes off right edge
+                if (left + 280 > window.innerWidth) {
+                    left = event.pageX - 280 - 15;
+                }
+
+                tooltip.style.left = left + "px";
+                tooltip.style.top = top + "px";
+                tooltip.classList.add('show');
+            }
+
+            function hideTooltip() {
+                document.getElementById('tooltip').classList.remove('show');
+            }
+
+            // Initial render
+            render();
+        });
+    </script>
+</body>
+
+</html>

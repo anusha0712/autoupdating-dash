@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BART Crime Data</title>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,7 +14,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            font-family: 'Barlow', -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
             color: #333;
             background-color: #fff;
             line-height: 1.6;
@@ -37,7 +38,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 0 20px;
         }
@@ -70,6 +71,16 @@
             border-top: 1px solid #eee;
             margin: 40px 0;
         }
+
+        footer {
+            margin-top: 80px;
+            padding: 30px 20px;
+            border-top: 3px solid #d62839;
+            text-align: center;
+            color: #888;
+            font-size: 0.9em;
+        }
+        
     </style>
 </head>
 
@@ -78,14 +89,14 @@
         <header>
             <h1>Crime Data: 16th St BART Station</h1>
             <p class="subtitle">500-foot radius around 2000 Mission St, San Francisco</p>
-            <p class="last-updated">Last updated: November 5, 2025</p>
+            <p class="last-updated">Last updated: November 10, 2025</p>
         </header>
 
-        <p>This page tracks crime incidents within 500 feet of the 16th Street BART Station. Data is updated weekly from
-            the CrimeMapping database and includes all reported incidents from local law enforcement.</p>
+        <p>This page tracks crime incidents within 500 feet of the 16th Street BART Station. Data is updated weekly from 
+            CrimeMapping.com. The BART police directly reports incidents to CrimeMapping.com with a lag of 24hrs.</p>
 
         <h2>Total Incidents</h2>
-        <p>Data covers the last 4 weeks of reported incidents.</p>
+        <p>Data covers crimes reported from May 9, 2025. Updated weekly.</p>
         <div class="chart">
             <iframe title="Number of crimes at 16th Street BART plaza per month" aria-label="Column Chart"
                 id="datawrapper-chart-5cAjV" src="https://datawrapper.dwcdn.net/5cAjV/1/" scrolling="no" frameborder="0"
@@ -94,10 +105,6 @@
                 type="text/javascript">window.addEventListener("message", function (a) { if (void 0 !== a.data["datawrapper-height"]) { var e = document.querySelectorAll("iframe"); for (var t in a.data["datawrapper-height"]) for (var r, i = 0; r = e[i]; i++)if (r.contentWindow === a.source) { var d = a.data["datawrapper-height"][t] + "px"; r.style.height = d } } });</script>
         </div>
 
-        <hr>
-
-        <h2>Crime Type Breakdown</h2>
-        <p>Distribution of incident types in the area.</p>
         <div class="chart">
             <iframe title="Crimes reported to BART police at the 16th Street BART Plaza" aria-label="Table"
                 id="datawrapper-chart-SSuZF" src="https://datawrapper.dwcdn.net/SSuZF/1/" scrolling="no" frameborder="0"
@@ -108,8 +115,20 @@
 
         <hr>
 
-        <h2>Weekly Trends</h2>
-        <p>Number of incidents per week over time.</p>
+        <h2>Monthly Crime Breakdown by Type</h2>
+        <p>Stacked view showing how different crime types contribute to monthly totals.</p>
+        <div class="chart">
+            <iframe title="Crimes reported to BART police at the 16th Street BART plaza" aria-label="Stacked column chart"
+                id="datawrapper-chart-GdHiu" src="https://datawrapper.dwcdn.net/GdHiu/1/" scrolling="no" frameborder="0"
+                style="width: 0; min-width: 100% !important; border: none;" height="571" data-external="1"></iframe>
+            <script
+                type="text/javascript">window.addEventListener("message", function (a) { if (void 0 !== a.data["datawrapper-height"]) { var e = document.querySelectorAll("iframe"); for (var t in a.data["datawrapper-height"]) for (var r, i = 0; r = e[i]; i++)if (r.contentWindow === a.source) { var d = a.data["datawrapper-height"][t] + "px"; r.style.height = d } } });</script>
+        </div>
+
+        <hr>
+
+        <h2>Crime Patterns by Month and Type</h2>
+        <p>Heatmap showing the frequency of different crime types across months.</p>
         <div class="chart">
             
             <img src="viz/bart/crime_heatmap.png" alt="Short description of image" loading="lazy"
@@ -117,7 +136,23 @@
 
         </div>
 
+        <hr>
+
+        <h2>Explore 16th Street BART crime for the past 6 months</h2>
+        <p>Each square represents a day. Hover over a date to see details</p>
+        <div class="chart">
+        
+            <iframe src="viz/bart/cal_map.html" width="100%" height="700" frameborder="0" scrolling="no"></iframe>
+        
+        </div>
+
     </div>
+
+    <footer>
+        <p>Data source: CrimeMapping.com | Updated weekly</p>
+        <p>Mission Local | 2025</p>
+    </footer>
+
 </body>
 
 </html>
