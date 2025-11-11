@@ -27,7 +27,7 @@ jobs:
         python-version: '3.10'
     - name: Install all necessary packages
       run: pip install jupyter pandas seaborn matplotlib
-    - name: Scraping today's data
+    - name: Updating data for viz
       run: jupyter nbconvert --to notebook --execute "bart_crime_viz.ipynb" --stdout
     - name: Commit and push any changes
       run: |-
